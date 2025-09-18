@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modern Calculator</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #2c3e50, #1a1a2e);
+            padding: 20px;
+        }
+        
+        .calculator-container {
+            background-color: #2d3436;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            padding: 25px;
+            width: 350px;
+        }
+        
+        h1 {
+            color: #f39c12;
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 28px;
+            text-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+        }
+        
+        .display {
+            background-color: #ecf0f1;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            text-align: right;
+            font-size: 32px;
+            font-weight: 500;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.2);
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            letter-spacing: 1.5px;
+            color: #2c3e50;
+        }
+        
+        .buttons-container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+        }
+        
+        button {
+            border: none;
+            border-radius: 10px;
+            padding: 18px 0;
+            font-size: 22px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        button:active {
+            transform: scale(0.95);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        
+        .number {
+            background-color: #34495e;
+            color: #ecf0f1;
+        }
+        
+        .number:hover {
+            background-color: #3d566e;
+        }
+        
+        .bop {
+            background-color: #e67e22;
+            color: white;
+        }
+        
+        .bop:hover {
+            background-color: #f39c12;
+        }
+        
+        .del {
+            background-color: #e74c3c;
+            color: white;
+        }
+        
+        .del:hover {
+            background-color: #c0392b;
+        }
+        
+        .b0 {
+            grid-column: span 2;
+        }
+        
+        .equals {
+            background-color: #27ae60;
+            color: white;
+        }
+        
+        .equals:hover {
+            background-color: #2ecc71;
+        }
+        
+        .operation-active {
+            background-color: #f1c40f;
+            color: #2d3436;
+            box-shadow: 0 0 15px #f1c40f;
+        }
+        
+        .memory-indicator {
+            color: #7f8c8d;
+            text-align: right;
+            font-size: 14px;
+            margin-top: 5px;
+            height: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="calculator-container">
+        <h1><i class="fas fa-calculator"></i> Calculator</h1>
+        
+        <div class="display" id="display">0</div>
+        <div class="memory-indicator" id="memory-indicator"></div>
+        
+        <div class="buttons-container">
+            <button class="del" onclick="clearAll()">AC</button>
+            <button class="del" onclick="deleteLast()">DEL</button>
+            <button class="bop" onclick="appendOperation('%')">%</button>
+            <button class="bop" onclick="appendOperation('/')">/</button>
+            
+            <button class="number" onclick="appendNumber('7')">7</button>
+            <button class="number" onclick="appendNumber('8')">8</button>
+            <button class="number" onclick="appendNumber('9')">9</button>
+            <button class="bop" onclick="appendOperation('*')">×</button>
+            
+            <button class="number" onclick="appendNumber('4')">4</button>
+            <button class="number" onclick="appendNumber('5')">5</button>
+            <button class="number" onclick="appendNumber('6')">6</button>
+            <button class="bop" onclick="appendOperation('-')">-</button>
+            
+            <button class="number" onclick="appendNumber('1')">1</button>
+            <button class="number" onclick="appendNumber('2')">2</button>
+            <button class="number" onclick="appendNumber('3')">3</button>
+            <button class="bop" onclick="appendOperation('+')">+</button>
+            
+            <button class="number b0" onclick="appendNumber('0')">0</button>
+            <button class="number" onclick="appendDecimal()">.</button>
+            <button class="equals" onclick="calculate()">=</button>
+        </div>
+    </div>
+
+    <script>
+        let currentInput = '0';
+        let previousInput = '';
+        let operation = null;
+        let shouldResetScreen = false;
+        let memory = 0;
+        
+        const display = document.getElementById('display');
+        const memoryIndicator = document.getElementById('memory-indicator');
+        
+        function updateDisplay() {
+            display.textContent = currentInput.replace('.', ',');
+            if (memory !== 0) {
+                memoryIndicator.textContent = `M: ${memory}`;
+            } else {
+                memoryIndicator.textContent = '';
+            }
+        }
+        
+        function appendNumber(number) {
+            if (currentInput === '0' || shouldResetScreen) {
+                currentInput = '';
+                shouldResetScreen = false;
+            }
+            
+            // Limit input length to prevent overflow
+            if (currentInput.length < 12) {
+                currentInput += number;
+            }
+            
+            updateDisplay();
+        }
+        
+        function appendDecimal() {
+            if (shouldResetScreen) {
+                currentInput = '0';
+                shouldResetScreen = false;
+            }
+            
+            if (!currentInput.includes('.')) {
+                currentInput += '.';
+            }
+            
+            updateDisplay();
+        }
+        
+        function clearAll() {
+            currentInput = '0';
+            previousInput = '';
+            operation = null;
+            updateDisplay();
+        }
+        
+        function deleteLast() {
+            if (currentInput.length === 1) {
+                currentInput = '0';
+            } else {
+                currentInput = currentInput.slice(0, -1);
+            }
+            updateDisplay();
+        }
+        
+        function appendOperation(op) {
+            if (operation !== null) calculate();
+            previousInput = currentInput;
+            operation = op;
+            shouldResetScreen = true;
+            
+            // Highlight the active operation button
+            document.querySelectorAll('.bop').forEach(btn => {
+                btn.classList.remove('operation-active');
+            });
+            event.target.classList.add('operation-active');
+        }
+        
+        function calculate() {
+            let computation;
+            const prev = parseFloat(previousInput);
+            const current = parseFloat(currentInput);
+            
+            if (isNaN(prev) || isNaN(current)) return;
+            
+            switch (operation) {
+                case '+':
+                    computation = prev + current;
+                    break;
+                case '-':
+                    computation = prev - current;
+                    break;
+                case '*':
+                    computation = prev * current;
+                    break;
+                case '/':
+                    if (current === 0) {
+                        computation = 'Error';
+                    } else {
+                        computation = prev / current;
+                    }
+                    break;
+                case '%':
+                    computation = prev % current;
+                    break;
+                default:
+                    return;
+            }
+            
+            // Remove operation highlight
+            document.querySelectorAll('.bop').forEach(btn => {
+                btn.classList.remove('operation-active');
+            });
+            
+            // Format the result to fit the display
+            currentInput = computation.toString();
+            if (currentInput.length > 12) {
+                currentInput = parseFloat(currentInput).toExponential(6);
+            }
+            
+            operation = null;
+            shouldResetScreen = true;
+            updateDisplay();
+        }
+        
+        // Initialize display
+        updateDisplay();
+        
+        // Keyboard support
+        document.addEventListener('keydown', function(event) {
+            if (/[0-9]/.test(event.key)) {
+                appendNumber(event.key);
+            } else if (event.key === '.') {
+                appendDecimal();
+            } else if (event.key === '+' || event.key === '-' || event.key === '*' || event.key === '/') {
+                appendOperation(event.key);
+            } else if (event.key === 'Enter' || event.key === '=') {
+                calculate();
+            } else if (event.key === 'Escape') {
+                clearAll();
+            } else if (event.key === 'Backspace') {
+                deleteLast();
+            } else if (event.key === '%') {
+                appendOperation('%');
+            }
+        });
+    </script>
+</body>
+</html>
